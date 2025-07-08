@@ -1,0 +1,39 @@
+[build-system]
+# 指定使用 setuptools + wheel 来打包
+requires = [
+  "setuptools>=61.0",
+  "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-backend-chat"
+version = "0.1.0"
+description = "FastAPI with MySQL, MongoDB, Redis, WebSocket, LLM integrations"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+requires-python = ">=3.11"
+
+
+[project.dependencies]
+fastapi = "^0.95.0"
+uvicorn = {extras = ["standard"], version = "^0.22.0"}
+SQLAlchemy = "^2.0"
+pymongo = "^4.5"
+beanite = "^1.24"  # 或 motor
+redis = "^5.0"
+python-dotenv = "^1.0"
+openai = "^0.28"
+shapely = "^2.0"
+
+[tool.setuptools]
+# 告诉 setuptools：源代码在 src 目录下
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["app*"]   # 只把 app 包（及其子包）安装进来
+
+#python-socketio[asyncio]   # Socket.IO 服务器
+#aiofiles                    # 异步文件读写，用于上传
+#python-multipart            # FastAPI 接收文件

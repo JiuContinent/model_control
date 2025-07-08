@@ -1,0 +1,28 @@
+# docker-compose.yml
+version: '3.8'
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db-container
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD} # 从 .env 文件读取
+      MYSQL_DATABASE: ${MYSQL_DB}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  mongo-db:
+    image: mongo:latest
+    container_name: mongo-db-container
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopassword # 确保与 MONGO_URI 匹配
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mysql-data:
+  mongo-data:
