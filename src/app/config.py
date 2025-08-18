@@ -1,47 +1,43 @@
-# src/app/config.py
-"""
-应用配置管理
-使用 pydantic-settings 从环境变量或 .env 文件中加载配置。
-提供类型安全的全局配置对象 `settings`。
-"""
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
+BASE_DIR = Path(__file__).resolve().parent  # app directory
+ENV_FILE = BASE_DIR / ".env"                # src/app/.env
+
 class Settings(BaseSettings):
-    # Pydantic-Settings 配置
     model_config = SettingsConfigDict(
-        env_file='.env',                # 从 .env 文件加载
+        env_file=str(ENV_FILE),
         env_file_encoding='utf-8',
-        extra='ignore'                  # 忽略 .env 中多余的变量
+        extra='ignore'
     )
 
-    # 项目配置
     PROJECT_NAME: str = "My FastAPI Project"
-
-    # MySQL 数据库配置
-    MYSQL_USER: str
-    MYSQL_PASSWORD: str
-    MYSQL_SERVER: str
-    MYSQL_PORT: int
-    MYSQL_DB: str
     USE_MYSQL: bool = False
     USE_MONGO: bool = False
-
-    @property
-    def MYSQL_ASYNC_URL(self) -> str:
-        """
-        生成异步 SQLAlchemy DSN (Data Source Name).
-        格式: driver+async_driver://user:password@host:port/database
-        """
-        return f"mysql+aiomysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_SERVER}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
-
-    # MongoDB 配置
-    MONGO_URI: str
-    MONGO_DB_NAME: str
-
-    # AI 后端配置
-    OPENAI_API_KEY: str
+    MONGO_URI: str = "mongodb://localhost:27017/"
+    MONGO_DB_NAME: str = "model_control_db"
+    
+    # Multi-datasource configuration
+    MAVLINK_MONGO_URI: str = "mongodb://localhost:27017/"
+    MAVLINK_MONGO_DB_NAME: str = "model_control_mavlink"
+    
+    CHAT_MONGO_URI: str = "mongodb://localhost:27017/"
+    CHAT_MONGO_DB_NAME: str = "model_control_chat"
+    
+    ANALYTICS_MONGO_URI: str = "mongodb://localhost:27017/"
+    ANALYTICS_MONGO_DB_NAME: str = "model_control_analytics"
+    
+    OPENAI_API_KEY: str = "dummy_key"
     OPENAI_API_BASE: str | None = None
+    
+    # Add environment variable validation
+    def model_post_init(self, __context) -> None:
+        if self.OPENAI_API_KEY == "dummy_key":
+            print("Warning: Please set a valid OPENAI_API_KEY")
+        if not self.USE_MONGO and not self.USE_MYSQL:
+            print("Warning: No database enabled, some features may not be available")
 
 
 @lru_cache()

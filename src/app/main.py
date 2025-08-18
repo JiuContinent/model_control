@@ -1,73 +1,118 @@
-# src/app/main.py
-"""
-应用主入口文件。
-- 使用 `lifespan` 上下文管理器统一管理应用的启动和关闭事件。
-- 根据 USE_MYSQL/USE_MONGO 开关有条件地初始化数据库，并对失败情况做捕获。
-- 注册所有 API 路由。
-"""
-from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+
 from app.config import settings
-from app.db.mongo import init_mongo_db
-from app.db.mysql import async_engine, close_mysql_connection
-from app.api import  crud, ai
-from app.socketio_app.server import create_socket_app
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print(f"--- Starting up {settings.PROJECT_NAME} ---")
+# from app.core.logging import setup_logging
+from app.core.exceptions import ModelControlException
+from app.api import ai, mavlink, datasource, upload
+# from loguru import logger
 
-    # 1. MySQL 初始化（可选）
-    if settings.USE_MYSQL:
-        try:
-            print("→ Testing MySQL connection...")
-            async with async_engine.connect() as conn:
-                await conn.execute("SELECT 1")
-            print("✅ MySQL connected.")
-        except Exception as e:
-            print(f"⚠️ MySQL 初始化失败，已跳过: {e!r}")
+# Setup logging
+# setup_logging()
 
-    # 2. MongoDB 初始化（可选）
-    if settings.USE_MONGO:
-        try:
-            print("→ Initializing MongoDB...")
-            await init_mongo_db()
-            print("✅ MongoDB initialized.")
-        except Exception as e:
-            print(f"⚠️ MongoDB 初始化失败，已跳过: {e!r}")
-
-    print(f"--- Lifespan startup complete ---")
-    yield
-    print(f"--- Shutting down {settings.PROJECT_NAME} ---")
-
-    # 3. MySQL 关闭连接（可选）
-    if settings.USE_MYSQL:
-        try:
-            await close_mysql_connection()
-            print("✅ MySQL connection closed.")
-        except Exception as e:
-            print(f"⚠️ MySQL 关闭失败: {e!r}")
-
-    print(f"--- Lifespan shutdown complete ---")
-
-
-# 创建 FastAPI 实例，指定 lifespan 管理器
+# Create FastAPI instance
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version="1.0.0",
-    lifespan=lifespan,
+    title="Model Control AI System",
+    description="FastAPI-based model control system with YOLOv11 AI recognition",
+    version="0.2.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
-BASE_DIR = Path(__file__).parent
-app.include_router(crud.router, prefix="/api", tags=["CRUD (MySQL)"])
-app.include_router(ai.router, prefix="/api/ai", tags=["AI Engine"])
 
-app.mount("/static", StaticFiles(directory= BASE_DIR / "static"), name="static")
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register API routes
+app.include_router(ai.router, prefix="/api/v1")
+app.include_router(mavlink.router, prefix="/api/v1")
+app.include_router(datasource.router, prefix="/api/v1")
+app.include_router(upload.router, prefix="/api/v1")
+
+
+@app.exception_handler(ModelControlException)
+async def model_control_exception_handler(request, exc):
+    """Custom exception handler"""
+    # logger.error(f"Business exception: {exc}")
+    print(f"Business exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "type": exc.__class__.__name__}
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    """General exception handler"""
+    # logger.error(f"Unhandled exception: {exc}")
+    print(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error", "detail": str(exc)}
+    )
 
 
 @app.get("/", tags=["Root"])
 def read_root():
-    return {"message": f"Welcome to {settings.PROJECT_NAME}"}
+    """Root path"""
+    return {
+        "message": "Welcome to Model Control AI System",
+        "version": "0.2.0",
+        "features": [
+            "YOLOv11 AI Object Detection",
+            "MAVLink Protocol Support",
+            "Multi-datasource Management",
+            "Real-time Data Processing"
+        ],
+        "docs": "/docs",
+        "health": "/health"
+    }
 
-socket_app = create_socket_app(app)
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    """Health check"""
+    return {
+        "status": "healthy",
+        "message": "Application is running",
+        "version": "0.2.0",
+        "services": {
+            "ai": "available",
+            "mavlink": "available",
+            "database": "available"
+        }
+    }
+
+
+@app.get("/api/v1/status", tags=["Status"])
+def get_system_status():
+    """Get system status"""
+    return {
+        "system": "Model Control AI System",
+        "version": "0.2.0",
+        "status": "running",
+        "endpoints": {
+            "ai": "/api/v1/ai",
+            "mavlink": "/api/v1/mavlink",
+            "datasource": "/api/v1/datasource",
+            "upload": "/api/v1/upload"
+        }
+    }
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

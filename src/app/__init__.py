@@ -1,4 +1,8 @@
-# from .config import settings
-# from .db import mysql, mongo
+"""
+Model Control AI System
+FastAPI-based model control system with YOLOv11 AI recognition
+"""
 
-# __all__ = ["settings", "mysql", "mongo"]
+__version__ = "0.2.0"
+__author__ = "Your Name"
+__email__ = "you@example.com"
