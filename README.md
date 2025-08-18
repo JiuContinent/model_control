@@ -244,3 +244,6 @@ API_CONFIG = {
 - 项目维护者：[Your Name]
 - 邮箱：[your.email@example.com]
 - 项目地址：[https://github.com/yourusername/model-control-ai]
+
+
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir src

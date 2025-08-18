@@ -26,6 +26,9 @@ shapely==2.0.2
 aiofiles==23.2.1
 python-socketio==5.10.0
 
+# MQTT客户端
+paho-mqtt==1.6.1
+
 # 日志和监控
 loguru==0.7.2
 

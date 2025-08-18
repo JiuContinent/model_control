@@ -1,6 +1,7 @@
 """
 MAVLink TCP Receiver Service
 Receives MAVLink binary data over TCP and stores it in MongoDB
+Also forwards data to MQTT broker
 """
 import asyncio
 import socket
@@ -10,7 +11,8 @@ import logging
 
 from app.mavlink.mavlink_parser import MavlinkParser
 from app.models.mavlink_models import MavlinkMessage, MavlinkSession, MavlinkStatistics
-from app.db.mongo_multi import use_source
+# from app.db.mongo_multi import mongo_manager
+from app.services.mqtt_service import mqtt_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -171,9 +173,21 @@ class MavlinkReceiver:
                 is_valid=parsed.get('is_valid', True)
             )
             
-            # Save to database
-            async with use_source("mavlink"):
-                await message.save()
+            # Save to database (temporarily disabled for testing)
+            # async with mongo_manager.use_source("mavlink"):
+            #     await message.save()
+            
+            # Forward to MQTT
+            try:
+                # Publish parsed data
+                await mqtt_service.publish_mavlink_data(parsed)
+                
+                # Also publish raw packet data
+                await mqtt_service.publish_raw_packet(packet, str(client_addr))
+                
+                logger.debug(f"Forwarded packet to MQTT: {parsed['message_id']} from system {parsed['system_id']}")
+            except Exception as mqtt_error:
+                logger.error(f"Failed to forward to MQTT: {mqtt_error}")
             
             # Update session tracking
             await self._update_session(parsed['system_id'], client_addr)
@@ -203,8 +217,8 @@ class MavlinkReceiver:
                     is_active=True
                 )
                 
-                async with use_source("mavlink"):
-                    await session.save()
+                # async with mongo_manager.use_source("mavlink"):
+                #     await session.save()
                 
                 self.sessions[session_key] = session
             else:
@@ -214,8 +228,8 @@ class MavlinkReceiver:
                 session.message_count += 1
                 session.is_active = True
                 
-                async with use_source("mavlink"):
-                    await session.save()
+                # async with mongo_manager.use_source("mavlink"):
+                #     await session.save()
                     
         except Exception as e:
             logger.error(f"Error updating session: {e}")
@@ -239,8 +253,8 @@ class MavlinkReceiver:
                         last_updated=now
                     )
                     
-                    async with use_source("mavlink"):
-                        await stats.save()
+                    # async with mongo_manager.use_source("mavlink"):
+                    #     await stats.save()
                     
                     self.daily_stats[today] = stats
                 
@@ -251,8 +265,8 @@ class MavlinkReceiver:
                 stats.active_sessions = len([s for s in self.sessions.values() if s.is_active])
                 stats.last_updated = now
                 
-                async with use_source("mavlink"):
-                    await stats.save()
+                # async with mongo_manager.use_source("mavlink"):
+                #     await stats.save()
                     
             except Exception as e:
                 logger.error(f"Error updating statistics: {e}")

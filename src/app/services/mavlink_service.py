@@ -6,6 +6,8 @@ from loguru import logger
 from app.core.exceptions import MAVLinkException
 from app.core.constants import MAVLINK_CONFIG
 from app.models.mavlink_models import MavlinkMessage, MavlinkSession
+from app.services.mqtt_service import mqtt_service
+from app.mavlink.mavlink_receiver import mavlink_receiver
 
 
 class MAVLinkService:
@@ -23,8 +25,15 @@ class MAVLinkService:
             host = host or MAVLINK_CONFIG["default_host"]
             port = port or MAVLINK_CONFIG["default_port"]
             
-            # Here should start the actual MAVLink receiver
-            # Temporarily simulate startup
+            # Start MQTT service first
+            try:
+                await mqtt_service.start()
+                logger.info("MQTT service started successfully")
+            except Exception as mqtt_error:
+                logger.warning(f"Failed to start MQTT service: {mqtt_error}")
+            
+            # Start the actual MAVLink receiver
+            await mavlink_receiver.start(port)
             self.is_running = True
             
             logger.info(f"MAVLink receiver started successfully - {host}:{port}")
@@ -32,6 +41,7 @@ class MAVLinkService:
                 "status": "started",
                 "host": host,
                 "port": port,
+                "mqtt_status": mqtt_service.get_status(),
                 "timestamp": datetime.now().isoformat()
             }
         except Exception as e:
@@ -41,7 +51,17 @@ class MAVLinkService:
     async def stop_receiver(self) -> Dict[str, Any]:
         """Stop MAVLink receiver"""
         try:
+            # Stop the actual MAVLink receiver
+            await mavlink_receiver.stop()
             self.is_running = False
+            
+            # Stop MQTT service
+            try:
+                await mqtt_service.stop()
+                logger.info("MQTT service stopped")
+            except Exception as mqtt_error:
+                logger.warning(f"Failed to stop MQTT service: {mqtt_error}")
+            
             logger.info("MAVLink receiver stopped")
             return {
                 "status": "stopped",
@@ -54,9 +74,10 @@ class MAVLinkService:
     async def get_receiver_status(self) -> Dict[str, Any]:
         """Get receiver status"""
         return {
-            "is_running": self.is_running,
-            "total_messages": len(self.messages),
-            "active_sessions": len(self.sessions),
+            "is_running": mavlink_receiver.is_running(),
+            "total_messages": mavlink_receiver.total_messages_received,
+            "active_sessions": len(mavlink_receiver.sessions),
+            "mqtt_status": mqtt_service.get_status(),
             "timestamp": datetime.now().isoformat()
         }
     

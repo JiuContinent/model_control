@@ -7,7 +7,7 @@ import uvicorn
 from app.config import settings
 # from app.core.logging import setup_logging
 from app.core.exceptions import ModelControlException
-from app.api import ai, mavlink, datasource, upload
+from app.api import ai, mavlink, datasource, upload, mqtt
 # from loguru import logger
 
 # Setup logging
@@ -36,6 +36,7 @@ app.include_router(ai.router, prefix="/api/v1")
 app.include_router(mavlink.router, prefix="/api/v1")
 app.include_router(datasource.router, prefix="/api/v1")
 app.include_router(upload.router, prefix="/api/v1")
+app.include_router(mqtt.router, prefix="/api/v1")
 
 
 @app.exception_handler(ModelControlException)
