@@ -17,7 +17,7 @@ class MQTTService:
         self.client: Optional[mqtt.Client] = None
         self.is_connected = False
         self.is_running = False
-        self.broker_host = "221.226.33.58"
+        self.broker_host = "221.226.33.58"  # Your specified MQTT broker IP
         self.broker_port = 1883
         self.topic = "/ue/device/mavlink"
         self.client_id = f"mavlink_publisher_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -26,7 +26,7 @@ class MQTTService:
         self.messages_published = 0
         self.last_publish_time: Optional[datetime] = None
         
-    async def start(self, broker_host: str = "27.11.11.30", broker_port: int = 1883, topic: str = "/ue/device/mavlink"):
+    async def start(self, broker_host: str = "221.226.33.58", broker_port: int = 1883, topic: str = "/ue/device/mavlink"):
         """Start MQTT service"""
         if self.is_running:
             logger.warning("MQTT service is already running")
@@ -49,22 +49,28 @@ class MQTTService:
             self.client.on_disconnect = self._on_disconnect
             self.client.on_publish = self._on_publish
             
-            # Connect to broker
+            # Connect to broker with timeout
             logger.info(f"Connecting to MQTT broker: {self.broker_host}:{self.broker_port}")
-            self.client.connect(self.broker_host, self.broker_port, 60)
+            try:
+                self.client.connect(self.broker_host, self.broker_port, 10)
+            except Exception as conn_error:
+                logger.warning(f"MQTT connection failed: {conn_error}")
+                logger.info("MQTT service will run in offline mode - GPS data will be logged but not published")
+                self.is_running = True
+                return
             
             # Start network loop in a separate thread
             self.is_running = True
             threading.Thread(target=self._network_loop, daemon=True).start()
             
             # Wait for connection
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             
             if self.is_connected:
                 logger.info(f"MQTT service started successfully. Topic: {self.topic}")
             else:
-                logger.error("Failed to connect to MQTT broker")
-                raise Exception("MQTT connection failed")
+                logger.warning("MQTT connection not established, running in offline mode")
+                logger.info("GPS data will be logged but not published to MQTT")
                 
         except Exception as e:
             logger.error(f"Failed to start MQTT service: {e}")
@@ -149,6 +155,38 @@ class MQTTService:
                 
         except Exception as e:
             logger.error(f"Error publishing MQTT message: {e}")
+            return False
+    
+    async def publish_gps_data(self, gps_data: Dict[str, Any]):
+        """Publish GPS data to MQTT topic /ue/device/gps"""
+        if not self.is_connected or not self.client:
+            logger.warning("MQTT client not connected")
+            return False
+        
+        try:
+            # Prepare GPS message payload
+            payload = {
+                "timestamp": datetime.now().isoformat(),
+                "gps_data": gps_data,
+                "source": "model_control_system"
+            }
+            
+            # Convert to JSON
+            message = json.dumps(payload, ensure_ascii=False)
+            
+            # Publish to GPS topic
+            gps_topic = "/ue/device/gps"
+            result = self.client.publish(gps_topic, message, qos=1)
+            
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                logger.debug(f"GPS data queued for MQTT publishing: {gps_topic}")
+                return True
+            else:
+                logger.error(f"Failed to queue GPS data. Return code: {result.rc}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error publishing GPS data: {e}")
             return False
     
     async def publish_raw_packet(self, packet_data: bytes, client_addr: str):

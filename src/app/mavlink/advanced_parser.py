@@ -2,8 +2,10 @@
 Advanced MAVLink Parser - Parse specific message types and extract useful data
 """
 import struct
+import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+from app.services.mqtt_service import mqtt_service
 
 
 class AdvancedMavlinkParser:
@@ -451,19 +453,52 @@ class AdvancedMavlinkParser:
                 print(f"  Note: Packet truncated (expected {message['payload_length']} bytes, got {message['actual_payload_length']})")
                 print(f"  Debug: Message ID={message['message_id']}, Payload start=10, Payload end={10 + message['payload_length']}, Data length={len(raw_data)}")
             
-            # Add equipment status based on message type
+            # Add equipment status based on message type and publish GPS data to MQTT
             parsed_data = message.get('parsed_data', {})
             if message['message_type'] == 'GPS_RAW_INT' and 'lat' in parsed_data and 'lon' in parsed_data:
                 lat = parsed_data['lat']
                 lon = parsed_data['lon']
                 alt = parsed_data.get('alt', 0.0)
                 print(f"    Equipment-{message['system_id']}: Position({lat:.6f}, {lon:.6f}) Altitude {alt:.1f}m Battery 100%")
+                
+                # Publish GPS data to MQTT
+                self._publish_gps_to_mqtt(message['system_id'], lat, lon, alt, parsed_data)
             else:
                 print(f"    Equipment-{message['system_id']}: Position(0.000000, 0.000000) Altitude 0.0m Battery 100%")
             print()
             
         except Exception as e:
             print(f"Error formatting message: {e}")
+    
+    def _publish_gps_to_mqtt(self, system_id: int, lat: float, lon: float, alt: float, parsed_data: Dict[str, Any]):
+        """Publish GPS data to MQTT topic /ue/device/gps"""
+        try:
+            # Prepare GPS data for MQTT
+            gps_data = {
+                "system_id": system_id,
+                "latitude": lat,
+                "longitude": lon,
+                "altitude": alt,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "fix_type": parsed_data.get('fix_type', 0),
+                "satellites_visible": parsed_data.get('satellites_visible', 0),
+                "ground_speed": parsed_data.get('vel', 0.0),
+                "course_over_ground": parsed_data.get('cog', 0.0),
+                "raw_data": parsed_data
+            }
+            
+            # Log GPS data
+            print(f"[GPS] System {system_id}: Position({lat:.6f}, {lon:.6f}) Altitude {alt:.1f}m")
+            
+            # Publish to MQTT asynchronously if connected
+            if mqtt_service.is_connected:
+                asyncio.create_task(mqtt_service.publish_gps_data(gps_data))
+                print(f"[MQTT] GPS data queued for publishing to /ue/device/gps")
+            else:
+                print(f"[MQTT] GPS data logged (MQTT not connected)")
+            
+        except Exception as e:
+            print(f"Error publishing GPS data to MQTT: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get parser statistics"""

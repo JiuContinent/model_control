@@ -109,7 +109,7 @@ def test_mqtt_connection():
         # ³¢ÊÔÆô¶¯MQTT·þÎñ
         response = requests.post("http://localhost:8000/api/v1/mqtt/start", 
                                json={
-                                   "broker_host": "27.11.11.30",
+                                   "broker_host": "221.226.33.58",
                                    "broker_port": 1883,
                                    "topic": "/ue/device/mavlink"
                                })

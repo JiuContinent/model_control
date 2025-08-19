@@ -10,6 +10,7 @@ from app.config import settings
 from app.core.exceptions import ModelControlException
 from app.api import ai, mavlink, datasource, upload, mqtt
 from app.mavlink.udp_receiver import start_udp_receiver, stop_udp_receiver
+from app.services.mqtt_service import mqtt_service
 # from loguru import logger
 
 # Setup logging
@@ -50,6 +51,13 @@ async def startup_event():
         print("UDP receiver started successfully, listening on port 14550")
     except Exception as e:
         print(f"Failed to start UDP receiver: {e}")
+    
+    print("Starting MQTT service...")
+    try:
+        await mqtt_service.start()
+        print("MQTT service started successfully")
+    except Exception as e:
+        print(f"Failed to start MQTT service: {e}")
 
 
 @app.on_event("shutdown")
@@ -61,6 +69,13 @@ async def shutdown_event():
         print("UDP receiver stopped")
     except Exception as e:
         print(f"Failed to stop UDP receiver: {e}")
+    
+    print("Stopping MQTT service...")
+    try:
+        await mqtt_service.stop()
+        print("MQTT service stopped")
+    except Exception as e:
+        print(f"Failed to stop MQTT service: {e}")
 
 
 @app.exception_handler(ModelControlException)
