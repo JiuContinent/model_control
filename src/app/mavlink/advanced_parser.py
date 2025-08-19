@@ -6,6 +6,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from app.services.mqtt_service import mqtt_service
+from app.services.device_manager import device_manager
 
 
 class AdvancedMavlinkParser:
@@ -112,6 +113,17 @@ class AdvancedMavlinkParser:
             
             self.packet_count += 1
             self.sample_rate_counter += 1
+            
+            # Always process GPS data for device management, regardless of sample rate
+            if message['message_type'] == 'GPS_RAW_INT':
+                parsed_data = message.get('parsed_data', {})
+                if 'lat' in parsed_data and 'lon' in parsed_data:
+                    lat = parsed_data['lat']
+                    lon = parsed_data['lon']
+                    alt = parsed_data.get('alt', 0.0)
+                    self._publish_gps_to_mqtt(message['system_id'], lat, lon, alt, parsed_data, message)
+            
+            # Print formatted message based on sample rate
             if self.sample_rate_counter >= self.sample_rate_interval:
                 self._print_formatted_message(message, data)
                 self.sample_rate_counter = 0
@@ -453,16 +465,13 @@ class AdvancedMavlinkParser:
                 print(f"  Note: Packet truncated (expected {message['payload_length']} bytes, got {message['actual_payload_length']})")
                 print(f"  Debug: Message ID={message['message_id']}, Payload start=10, Payload end={10 + message['payload_length']}, Data length={len(raw_data)}")
             
-            # Add equipment status based on message type and publish GPS data to MQTT
+            # Add equipment status based on message type
             parsed_data = message.get('parsed_data', {})
             if message['message_type'] == 'GPS_RAW_INT' and 'lat' in parsed_data and 'lon' in parsed_data:
                 lat = parsed_data['lat']
                 lon = parsed_data['lon']
                 alt = parsed_data.get('alt', 0.0)
                 print(f"    Equipment-{message['system_id']}: Position({lat:.6f}, {lon:.6f}) Altitude {alt:.1f}m Battery 100%")
-                
-                # Publish GPS data to MQTT
-                self._publish_gps_to_mqtt(message['system_id'], lat, lon, alt, parsed_data)
             else:
                 print(f"    Equipment-{message['system_id']}: Position(0.000000, 0.000000) Altitude 0.0m Battery 100%")
             print()
@@ -470,12 +479,23 @@ class AdvancedMavlinkParser:
         except Exception as e:
             print(f"Error formatting message: {e}")
     
-    def _publish_gps_to_mqtt(self, system_id: int, lat: float, lon: float, alt: float, parsed_data: Dict[str, Any]):
+    def _publish_gps_to_mqtt(self, system_id: int, lat: float, lon: float, alt: float, parsed_data: Dict[str, Any], message: Dict[str, Any]):
         """Publish GPS data to MQTT topic /ue/device/gps"""
         try:
-            # Prepare GPS data for MQTT
+            # Get or create device using device manager
+            component_id = message.get('component_id', 0)
+            client_address = message.get('client_address', 'unknown')
+            
+            device = device_manager.get_or_create_device(system_id, component_id, client_address)
+            device_id = device.device_id
+            
+            # Prepare GPS data for MQTT with enhanced device identification
             gps_data = {
+                "device_id": device_id,
                 "system_id": system_id,
+                "component_id": component_id,
+                "client_address": client_address,
+                "device_type": device.device_type,
                 "latitude": lat,
                 "longitude": lon,
                 "altitude": alt,
@@ -484,11 +504,22 @@ class AdvancedMavlinkParser:
                 "satellites_visible": parsed_data.get('satellites_visible', 0),
                 "ground_speed": parsed_data.get('vel', 0.0),
                 "course_over_ground": parsed_data.get('cog', 0.0),
+                "message_sequence": message.get('sequence', 0),
+                "message_type": message.get('message_type', 'GPS_RAW_INT'),
+                "device_stats": {
+                    "message_count": device.message_count,
+                    "gps_fix_count": device.gps_fix_count,
+                    "first_seen": device.first_seen.isoformat(),
+                    "last_seen": device.last_seen.isoformat()
+                },
                 "raw_data": parsed_data
             }
             
-            # Log GPS data
-            print(f"[GPS] System {system_id}: Position({lat:.6f}, {lon:.6f}) Altitude {alt:.1f}m")
+            # Update device with GPS data
+            device_manager.update_device_gps(device_id, gps_data)
+            
+            # Log GPS data with device ID
+            print(f"[GPS] {device_id}: Position({lat:.6f}, {lon:.6f}) Altitude {alt:.1f}m (Fix: {parsed_data.get('fix_type', 0)}, Sats: {parsed_data.get('satellites_visible', 0)})")
             
             # Publish to MQTT asynchronously if connected
             if mqtt_service.is_connected:
