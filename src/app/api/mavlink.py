@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
 from app.services.mavlink_service import mavlink_service
+from app.mavlink.udp_receiver import get_udp_receiver
 from app.core.exceptions import MAVLinkException
 from loguru import logger
 
@@ -156,3 +157,63 @@ async def mavlink_health_check():
             "status": "unhealthy",
             "error": str(e)
         }
+
+
+@router.get("/udp/status")
+async def get_udp_receiver_status():
+    """
+    Get UDP receiver status
+    
+    Returns:
+        UDP receiver status information
+    """
+    try:
+        udp_receiver = get_udp_receiver()
+        return udp_receiver.get_stats()
+    except Exception as e:
+        logger.error(f"Failed to get UDP receiver status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get UDP status: {e}")
+
+
+@router.get("/udp/messages")
+async def get_udp_messages(limit: int = Query(100, ge=1, le=1000)):
+    """
+    Get UDP receiver messages
+    
+    Args:
+        limit: Message count limit
+        
+    Returns:
+        UDP message list
+    """
+    try:
+        udp_receiver = get_udp_receiver()
+        messages = udp_receiver.get_messages(limit)
+        return {
+            "messages": messages,
+            "total": len(messages),
+            "limit": limit
+        }
+    except Exception as e:
+        logger.error(f"Failed to get UDP messages: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get UDP messages: {e}")
+
+
+@router.get("/udp/sessions")
+async def get_udp_sessions():
+    """
+    Get UDP receiver sessions
+    
+    Returns:
+        UDP session list
+    """
+    try:
+        udp_receiver = get_udp_receiver()
+        sessions = udp_receiver.get_sessions()
+        return {
+            "sessions": sessions,
+            "total": len(sessions)
+        }
+    except Exception as e:
+        logger.error(f"Failed to get UDP sessions: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get UDP sessions: {e}")

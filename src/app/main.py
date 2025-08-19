@@ -3,11 +3,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+import asyncio
 
 from app.config import settings
 # from app.core.logging import setup_logging
 from app.core.exceptions import ModelControlException
 from app.api import ai, mavlink, datasource, upload, mqtt
+from app.mavlink.udp_receiver import start_udp_receiver, stop_udp_receiver
 # from loguru import logger
 
 # Setup logging
@@ -37,6 +39,28 @@ app.include_router(mavlink.router, prefix="/api/v1")
 app.include_router(datasource.router, prefix="/api/v1")
 app.include_router(upload.router, prefix="/api/v1")
 app.include_router(mqtt.router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Application startup event handler"""
+    print("Starting UDP receiver...")
+    try:
+        await start_udp_receiver()
+        print("UDP receiver started successfully, listening on port 14550")
+    except Exception as e:
+        print(f"Failed to start UDP receiver: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Application shutdown event handler"""
+    print("Stopping UDP receiver...")
+    try:
+        await stop_udp_receiver()
+        print("UDP receiver stopped")
+    except Exception as e:
+        print(f"Failed to stop UDP receiver: {e}")
 
 
 @app.exception_handler(ModelControlException)

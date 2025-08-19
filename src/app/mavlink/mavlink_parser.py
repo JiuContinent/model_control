@@ -47,6 +47,41 @@ class MavlinkParser:
                     ("errors_count3", "uint16"),
                     ("errors_count4", "uint16")
                 ]
+            },
+            # Attitude message (message ID 30)
+            30: {
+                "name": "ATTITUDE",
+                "fields": [
+                    ("time_boot_ms", "uint32"),
+                    ("roll", "float"),
+                    ("pitch", "float"),
+                    ("yaw", "float"),
+                    ("rollspeed", "float"),
+                    ("pitchspeed", "float"),
+                    ("yawspeed", "float")
+                ]
+            },
+            # Scaled pressure message (message ID 29)
+            29: {
+                "name": "SCALED_PRESSURE",
+                "fields": [
+                    ("time_boot_ms", "uint32"),
+                    ("press_abs", "float"),
+                    ("press_diff", "float"),
+                    ("temperature", "int16")
+                ]
+            },
+            # VFR HUD message (message ID 74)
+            74: {
+                "name": "VFR_HUD",
+                "fields": [
+                    ("airspeed", "float"),
+                    ("groundspeed", "float"),
+                    ("heading", "int16"),
+                    ("throttle", "uint16"),
+                    ("alt", "float"),
+                    ("climb", "float")
+                ]
             }
         }
     

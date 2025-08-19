@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import base64
 
-from app.mavlink.simple_parser import SimpleMavlinkParser
+from app.mavlink.advanced_parser import AdvancedMavlinkParser
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +22,7 @@ class MavlinkUdpReceiver:
     def __init__(self, host: str = "0.0.0.0", port: int = 14550):
         self.host = host
         self.port = port
-        self.parser = SimpleMavlinkParser()
+        self.parser = AdvancedMavlinkParser()
         self.is_running = False
         self.socket = None
         self.messages = []
@@ -107,22 +107,52 @@ class MavlinkUdpReceiver:
         """Process received MAVLink packet"""
         try:
             client_address = f"{addr[0]}:{addr[1]}"
-            logger.info(f"Received {len(data)} bytes from {client_address}")
+
+            # Debug: Log raw data occasionally
+            if not hasattr(self, '_debug_counter'):
+                self._debug_counter = 0
+            self._debug_counter += 1
             
-            # Parse MAVLink packet
-            message = self.parser.parse_packet(data, client_address)
-            
-            if message:
+            if self._debug_counter % 50 == 1:  # Log every 50th packet
+                logger.info(f"DEBUG: Received {len(data)} bytes from {client_address}")
+                logger.info(f"DEBUG: Raw data (first 20 bytes): {data[:20].hex()}")
+                if len(data) >= 10:
+                    logger.info(f"DEBUG: First byte: 0x{data[0]:02x}, Payload length: {data[1]}")
+
+            # Split possible multiple MAVLink v2 packets within this UDP datagram
+            packets = self._split_mavlink_packets(data)
+
+            if not packets:
+                # Only log parse failures occasionally to reduce spam
+                if hasattr(self, '_parse_fail_count'):
+                    self._parse_fail_count += 1
+                else:
+                    self._parse_fail_count = 1
+                if self._parse_fail_count % 100 == 0:
+                    logger.warning(f"Failed to parse {self._parse_fail_count} MAVLink packets from {client_address}")
+                    if self._parse_fail_count == 100:  # First failure, show debug info
+                        logger.info(f"DEBUG: Sample failed data: {data[:50].hex()}")
+                return
+
+            for pkt in packets:
+                message = self.parser.parse_packet(pkt, client_address)
+                if not message:
+                    if hasattr(self, '_parse_fail_count'):
+                        self._parse_fail_count += 1
+                    else:
+                        self._parse_fail_count = 1
+                    continue
+
                 # Store message
                 self.messages.append(message)
-                
+
                 # Update or create session
                 session_key = f"{message['system_id']}_{client_address}"
                 existing_session = next(
-                    (s for s in self.sessions if s['key'] == session_key), 
+                    (s for s in self.sessions if s['key'] == session_key),
                     None
                 )
-                
+
                 if existing_session:
                     existing_session['last_seen'] = message['timestamp']
                     existing_session['message_count'] += 1
@@ -136,15 +166,47 @@ class MavlinkUdpReceiver:
                         'message_count': 1,
                         'is_active': True
                     })
-                
-                logger.info(f"Parsed MAVLink message: ID={message['message_id']}, "
-                          f"System={message['system_id']}, "
-                          f"Component={message['component_id']}")
-            else:
-                logger.warning(f"Failed to parse MAVLink packet from {client_address}")
-                
+
+            # Log aggregated results occasionally
+            if hasattr(self, '_parse_fail_count') and self._parse_fail_count and self._parse_fail_count % 100 == 0:
+                logger.warning(f"Failed to parse {self._parse_fail_count} MAVLink packets from {client_address}")
+
         except Exception as e:
             logger.error(f"Error processing packet: {e}")
+
+    def _split_mavlink_packets(self, data: bytes) -> list:
+        """Scan a UDP datagram for one or more MAVLink v2 packets and return list of slices.
+        Handle both complete and truncated packets.
+        """
+        packets = []
+        i = 0
+        length = len(data)
+        
+        while i + 10 <= length:
+            # Find next v2 STX
+            if data[i] != 0xFD:
+                i += 1
+                continue
+                
+            # Need at least header
+            if i + 10 > length:
+                break
+                
+            payload_len = data[i + 1]
+            # header is 10 bytes, payload follows
+            total_no_crc = 10 + payload_len
+            
+            if i + total_no_crc <= length:
+                # Complete packet
+                packets.append(data[i:i + total_no_crc])
+                i += total_no_crc
+            else:
+                # Truncated packet - include what we have
+                if i + 10 <= length:
+                    packets.append(data[i:length])
+                break
+                
+        return packets
     
     def get_messages(self, limit: int = 100) -> list:
         """Get stored messages"""
