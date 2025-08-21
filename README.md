@@ -241,8 +241,8 @@ API_CONFIG = {
 
 ## 📞 联系方式
 
-- 项目维护者：[Your Name]
-- 邮箱：[your.email@example.com]
+- 项目维护者：[Jiu Continent]
+- 邮箱：JiuContinent@gmail.com]
 - 项目地址：[https://github.com/yourusername/model-control-ai]
 
 
