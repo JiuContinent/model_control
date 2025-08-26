@@ -21,6 +21,17 @@ opencv-python==4.8.1.78
 pillow==10.1.0
 numpy==1.24.3
 
+# GPU加速支持 (可选，根据需要安装)
+# torch==2.1.1+cu118  # 替换上面的torch，用于CUDA 11.8支持
+# torchvision==0.16.1+cu118  # 替换上面的torchvision
+
+# 流媒体处理
+opencv-contrib-python==4.8.1.78  # 额外的OpenCV模块支持
+ffmpeg-python==0.2.0  # FFmpeg Python绑定
+
+# 高性能数值计算
+scipy==1.11.4  # 科学计算库
+
 # 工具库
 shapely==2.0.2
 aiofiles==23.2.1

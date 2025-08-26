@@ -8,7 +8,7 @@ import asyncio
 from app.config import settings
 # from app.core.logging import setup_logging
 from app.core.exceptions import ModelControlException
-from app.api import ai, mavlink, datasource, upload, mqtt
+from app.api import ai, mavlink, datasource, upload, mqtt, realtime_ai, vehicle_ai
 from app.mavlink.udp_receiver import start_udp_receiver, stop_udp_receiver
 from app.services.mqtt_service import mqtt_service
 # from loguru import logger
@@ -40,11 +40,30 @@ app.include_router(mavlink.router, prefix="/api/v1")
 app.include_router(datasource.router, prefix="/api/v1")
 app.include_router(upload.router, prefix="/api/v1")
 app.include_router(mqtt.router, prefix="/api/v1")
+app.include_router(realtime_ai.router, prefix="/api/v1")
+app.include_router(vehicle_ai.router, prefix="/api/v1")
 
 
 @app.on_event("startup")
 async def startup_event():
     """Application startup event handler"""
+    
+    # Log system information including GPU detection
+    try:
+        from app.realtime_ai.utils.system_utils import log_system_startup_info, validate_environment
+        log_system_startup_info()
+        
+        # Validate environment
+        issues = validate_environment()
+        if issues:
+            print("??  Environment validation warnings:")
+            for issue in issues:
+                print(f"   - {issue}")
+        else:
+            print("? Environment validation passed")
+    except Exception as e:
+        print(f"Failed to log system info: {e}")
+    
     print("Starting UDP receiver...")
     try:
         await start_udp_receiver()
@@ -58,6 +77,8 @@ async def startup_event():
         print("MQTT service started successfully")
     except Exception as e:
         print(f"Failed to start MQTT service: {e}")
+    
+    print("? Model Control AI System started successfully!")
 
 
 @app.on_event("shutdown")
@@ -108,6 +129,8 @@ def read_root():
         "version": "0.2.0",
         "features": [
             "YOLOv11 AI Object Detection",
+            "Real-time AI Stream Recognition",
+            "RTSP/RTMP Stream Support",
             "MAVLink Protocol Support",
             "Multi-datasource Management",
             "Real-time Data Processing"
@@ -141,6 +164,8 @@ def get_system_status():
         "status": "running",
         "endpoints": {
             "ai": "/api/v1/ai",
+            "realtime_ai": "/api/v1/realtime-ai",
+            "vehicle_ai": "/api/v1/vehicle-ai",
             "mavlink": "/api/v1/mavlink",
             "datasource": "/api/v1/datasource",
             "upload": "/api/v1/upload"
@@ -152,7 +177,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=2000,
         reload=True,
         log_level="info"
     )
