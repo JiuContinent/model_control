@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     )
 
     PROJECT_NAME: str = "My FastAPI Project"
-    USE_MYSQL: bool = False
     USE_MONGO: bool = False
     MONGO_URI: str = "mongodb://localhost:27017/"
     MONGO_DB_NAME: str = "model_control_db"
@@ -36,7 +35,7 @@ class Settings(BaseSettings):
     def model_post_init(self, __context) -> None:
         if self.OPENAI_API_KEY == "dummy_key":
             print("Warning: Please set a valid OPENAI_API_KEY")
-        if not self.USE_MONGO and not self.USE_MYSQL:
+        if not self.USE_MONGO:
             print("Warning: No database enabled, some features may not be available")
 
 

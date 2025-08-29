@@ -21,7 +21,6 @@ uvicorn = {extras = ["standard"], version = "^0.24.0"}
 python-multipart = "^0.0.6"
 
 # 数据库
-SQLAlchemy = "^2.0"
 pymongo = "^4.5"
 beanite = "^1.24"
 redis = "^5.0"

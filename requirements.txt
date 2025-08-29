@@ -4,7 +4,6 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
 # Êý¾Ý¿â
-SQLAlchemy==2.0.23
 pymongo==4.6.0
 # beanite==1.24.0
 redis==5.0.1
