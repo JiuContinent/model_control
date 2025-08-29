@@ -247,3 +247,4 @@ API_CONFIG = {
 
 
 ## python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir src
+## python -m uvicorn app.main:app --host 0.0.0.0 --port 2000 --reload --app-dir src
