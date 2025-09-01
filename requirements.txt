@@ -8,6 +8,11 @@ pymongo==4.6.0
 # beanite==1.24.0
 redis==5.0.1
 
+# MySQL数据库支持
+aiomysql==0.2.0
+sqlalchemy==2.0.23
+alembic==1.13.0
+
 # 配置和环境
 python-dotenv==1.0.0
 pydantic-settings==2.1.0

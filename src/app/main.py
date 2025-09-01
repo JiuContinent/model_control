@@ -8,7 +8,7 @@ import asyncio
 from app.config import settings
 # from app.core.logging import setup_logging
 from app.core.exceptions import ModelControlException
-from app.api import ai, mavlink, datasource, upload, mqtt, realtime_ai, vehicle_ai
+from app.api import ai, mavlink, datasource, upload, mqtt, realtime_ai, vehicle_ai, mysql_datasource
 from app.mavlink.udp_receiver import start_udp_receiver, stop_udp_receiver
 from app.services.mqtt_service import mqtt_service
 # from loguru import logger
@@ -42,6 +42,7 @@ app.include_router(upload.router, prefix="/api/v1")
 app.include_router(mqtt.router, prefix="/api/v1")
 app.include_router(realtime_ai.router, prefix="/api/v1")
 app.include_router(vehicle_ai.router, prefix="/api/v1")
+app.include_router(mysql_datasource.router, prefix="/api/v1")
 
 
 @app.on_event("startup")
@@ -78,6 +79,16 @@ async def startup_event():
     except Exception as e:
         print(f"Failed to start MQTT service: {e}")
     
+    # Initialize MySQL multi-source manager
+    if settings.USE_MYSQL:
+        print("Initializing MySQL multi-source manager...")
+        try:
+            from app.db.mysql_multi import init_mysql_multi
+            await init_mysql_multi()
+            print("MySQL multi-source manager initialized successfully")
+        except Exception as e:
+            print(f"Failed to initialize MySQL multi-source manager: {e}")
+    
     print("? Model Control AI System started successfully!")
 
 
@@ -97,6 +108,16 @@ async def shutdown_event():
         print("MQTT service stopped")
     except Exception as e:
         print(f"Failed to stop MQTT service: {e}")
+    
+    # Close MySQL connections
+    if settings.USE_MYSQL:
+        print("Closing MySQL connections...")
+        try:
+            from app.db.mysql_multi import mysql_manager
+            await mysql_manager.close_all()
+            print("MySQL connections closed")
+        except Exception as e:
+            print(f"Failed to close MySQL connections: {e}")
 
 
 @app.exception_handler(ModelControlException)
@@ -133,6 +154,7 @@ def read_root():
             "RTSP/RTMP Stream Support",
             "MAVLink Protocol Support",
             "Multi-datasource Management",
+            "MySQL Multi-tenant Support",
             "Real-time Data Processing"
         ],
         "docs": "/docs",
@@ -168,6 +190,7 @@ def get_system_status():
             "vehicle_ai": "/api/v1/vehicle-ai",
             "mavlink": "/api/v1/mavlink",
             "datasource": "/api/v1/datasource",
+            "mysql_datasource": "/api/v1/mysql-datasource",
             "upload": "/api/v1/upload"
         }
     }
