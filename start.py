@@ -46,9 +46,27 @@ def create_env_file():
     """Create environment configuration file"""
     env_file = Path(".env")
     if not env_file.exists():
-        env_content = """# MongoDB Configuration
-MONGO_URI=mongodb://localhost:27017/
-MONGO_DB_NAME=model_control
+        env_content = """# MongoDB Configuration - 支持认证
+MONGO_HOST=221.226.33.58
+MONGO_PORT=27017
+MONGO_USERNAME=
+MONGO_PASSWORD=
+MONGO_AUTH_SOURCE=admin
+USE_MONGO=true
+
+# 主要数据库配置
+MONGO_DB_NAME=control_db
+CONTROL_DB_NAME=control_db
+DJI_DB_NAME=dji
+
+# 专用数据源配置
+MAVLINK_MONGO_DB_NAME=control_mavlink
+CHAT_MONGO_DB_NAME=model_control_chat
+ANALYTICS_MONGO_DB_NAME=ai_control_analytics
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_BASE=https://api.openai.com/v1
 
 # AI Model Configuration
 AI_MODEL_PATH=models/yolov11.pt

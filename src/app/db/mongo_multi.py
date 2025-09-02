@@ -25,12 +25,17 @@ class MongoMultiSourceManager:
             "default": {
                 "uri": settings.MONGO_URI,
                 "db_name": settings.MONGO_DB_NAME,
-                "description": "Default data source (DJI)"
+                "description": "Default data source (control_db)"
+            },
+            "control": {
+                "uri": settings.MONGO_URI,
+                "db_name": settings.CONTROL_DB_NAME,
+                "description": "Control system data source"
             },
             "dji": {
                 "uri": settings.MONGO_URI,
-                "db_name": settings.MONGO_DB_NAME,
-                "description": "DJI data source"
+                "db_name": settings.DJI_DB_NAME,
+                "description": "DJI equipment data source"
             },
             "ue": {
                 "uri": getattr(settings, 'UE_MONGO_URI', settings.MONGO_URI),
@@ -39,17 +44,17 @@ class MongoMultiSourceManager:
             },
             "mavlink": {
                 "uri": getattr(settings, 'MAVLINK_MONGO_URI', settings.MONGO_URI),
-                "db_name": getattr(settings, 'MAVLINK_MONGO_DB_NAME', settings.MONGO_DB_NAME),
-                "description": "MAVLink dedicated data source (DJI)"
+                "db_name": getattr(settings, 'MAVLINK_MONGO_DB_NAME', settings.MAVLINK_MONGO_DB_NAME),
+                "description": "MAVLink dedicated data source"
             },
             "chat": {
                 "uri": getattr(settings, 'CHAT_MONGO_URI', settings.MONGO_URI),
-                "db_name": getattr(settings, 'CHAT_MONGO_DB_NAME', f"{settings.MONGO_DB_NAME}_chat"),
+                "db_name": getattr(settings, 'CHAT_MONGO_DB_NAME', settings.CHAT_MONGO_DB_NAME),
                 "description": "Chat dedicated data source"
             },
             "analytics": {
                 "uri": getattr(settings, 'ANALYTICS_MONGO_URI', settings.MONGO_URI),
-                "db_name": getattr(settings, 'ANALYTICS_MONGO_DB_NAME', f"{settings.MONGO_DB_NAME}_analytics"),
+                "db_name": getattr(settings, 'ANALYTICS_MONGO_DB_NAME', settings.ANALYTICS_MONGO_DB_NAME),
                 "description": "Analytics dedicated data source"
             }
         }

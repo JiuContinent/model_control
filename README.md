@@ -75,9 +75,27 @@ pip install -e .
 创建 `.env` 文件并配置以下环境变量：
 
 ```env
-# MongoDB 配置
-MONGO_URI="mongodb://localhost:27017/"
-MONGO_DB_NAME="model_control"
+# MongoDB 配置 - 支持认证
+MONGO_HOST="221.226.33.58"
+MONGO_PORT=27017
+MONGO_USERNAME="your_mongodb_username"    # MongoDB用户名
+MONGO_PASSWORD="your_mongodb_password"    # MongoDB密码
+MONGO_AUTH_SOURCE="admin"                 # 认证数据库，通常是admin
+USE_MONGO=true
+
+# 主要数据库配置
+MONGO_DB_NAME="control_db"               # 默认主数据库
+CONTROL_DB_NAME="control_db"             # 控制系统数据库
+DJI_DB_NAME="dji"                        # DJI设备数据库
+
+# 专用数据源配置
+MAVLINK_MONGO_DB_NAME="control_mavlink"
+CHAT_MONGO_DB_NAME="model_control_chat"
+ANALYTICS_MONGO_DB_NAME="ai_control_analytics"
+
+# OpenAI 配置
+OPENAI_API_KEY="your_openai_api_key"
+OPENAI_API_BASE="https://api.openai.com/v1"
 
 # AI 模型配置
 AI_MODEL_PATH="models/yolov11.pt"
@@ -88,8 +106,27 @@ AI_IOU_THRESHOLD=0.45
 MAVLINK_HOST="0.0.0.0"
 MAVLINK_PORT=5760
 
+# 项目配置
+PROJECT_NAME="AI Model Control System"
+
 # 日志配置
 LOG_LEVEL="INFO"
+```
+
+**多数据库支持：**
+- `control_db`：控制系统主数据库
+- `dji`：DJI设备专用数据库
+- 系统支持动态切换不同数据源
+
+**认证配置：** 
+- 如果你的MongoDB没有启用认证，可以将 `MONGO_USERNAME` 和 `MONGO_PASSWORD` 留空
+- 如果MongoDB启用了认证，必须提供有效的用户名和密码
+- `MONGO_AUTH_SOURCE` 通常设置为 `admin`，这是MongoDB的默认认证数据库
+
+**测试连接：**
+```bash
+# 测试MongoDB连接和多数据源配置
+python test_mongo_connection.py
 ```
 
 ### 4. 启动应用
@@ -97,7 +134,7 @@ LOG_LEVEL="INFO"
 ```bash
 # 开发模式启动
 uvicorn app.main:app --reload --app-dir src
-
+python -m uvicorn app.main:app --host 0.0.0.0 --port 2000 --reload --app-dir src
 # 或直接运行
 python src/app/main.py
 ```
@@ -244,7 +281,3 @@ API_CONFIG = {
 - 项目维护者：[Jiu Continent]
 - 邮箱：JiuContinent@gmail.com]
 - 项目地址：[https://github.com/yourusername/model-control-ai]
-
-
-## python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir src
-## python -m uvicorn app.main:app --host 0.0.0.0 --port 2000 --reload --app-dir src
