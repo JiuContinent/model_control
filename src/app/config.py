@@ -35,8 +35,15 @@ class Settings(BaseSettings):
     CHAT_MONGO_DB_NAME: str = "model_control_chat"
     ANALYTICS_MONGO_DB_NAME: str = "ai_control_analytics"
     
-    OPENAI_API_KEY: str = "dummy_key"
-    OPENAI_API_BASE: str | None = None
+    # vLLM配置
+    VLLM_BASE_URL: str = "http://221.226.33.59:8000"
+    VLLM_TIMEOUT: int = 30
+    VLLM_DEFAULT_MODEL: str = "default"
+    
+    # MCP协议配置
+    MCP_ENABLED: bool = True
+    MCP_SERVER_NAME: str = "Model Control MCP Server"
+    MCP_SERVER_VERSION: str = "1.0.0"
     
     @property
     def MONGO_URI(self) -> str:
@@ -65,10 +72,12 @@ class Settings(BaseSettings):
     
     # Add environment variable validation
     def model_post_init(self, __context) -> None:
-        if self.OPENAI_API_KEY == "dummy_key":
-            print("Warning: Please set a valid OPENAI_API_KEY")
         if not self.USE_MONGO:
             print("Warning: No database enabled, some features may not be available")
+        
+        # vLLM服务验证
+        if not self.VLLM_BASE_URL:
+            print("Warning: VLLM_BASE_URL not configured, LLM features will not be available")
 
 
 @lru_cache()

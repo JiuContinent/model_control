@@ -8,7 +8,7 @@ import asyncio
 from app.config import settings
 # from app.core.logging import setup_logging
 from app.core.exceptions import ModelControlException
-from app.api import ai, mavlink, datasource, upload, mqtt, realtime_ai, vehicle_ai
+from app.api import ai, mavlink, datasource, upload, mqtt, realtime_ai, vehicle_ai, llm
 from app.mavlink.udp_receiver import start_udp_receiver, stop_udp_receiver
 from app.services.mqtt_service import mqtt_service
 # from loguru import logger
@@ -42,6 +42,7 @@ app.include_router(upload.router, prefix="/api/v1")
 app.include_router(mqtt.router, prefix="/api/v1")
 app.include_router(realtime_ai.router, prefix="/api/v1")
 app.include_router(vehicle_ai.router, prefix="/api/v1")
+app.include_router(llm.router, prefix="/api/v1")
 
 
 @app.on_event("startup")
@@ -133,7 +134,10 @@ def read_root():
             "RTSP/RTMP Stream Support",
             "MAVLink Protocol Support",
             "Multi-datasource Management",
-            "Real-time Data Processing"
+            "Real-time Data Processing",
+            "vLLM Large Language Model Integration",
+            "MCP Protocol Support",
+            "AI Chat and Text Generation"
         ],
         "docs": "/docs",
         "health": "/health"
@@ -168,7 +172,8 @@ def get_system_status():
             "vehicle_ai": "/api/v1/vehicle-ai",
             "mavlink": "/api/v1/mavlink",
             "datasource": "/api/v1/datasource",
-            "upload": "/api/v1/upload"
+            "upload": "/api/v1/upload",
+            "llm": "/api/v1/llm"
         }
     }
 
