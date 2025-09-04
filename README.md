@@ -93,9 +93,15 @@ MAVLINK_MONGO_DB_NAME="control_mavlink"
 CHAT_MONGO_DB_NAME="model_control_chat"
 ANALYTICS_MONGO_DB_NAME="ai_control_analytics"
 
-# OpenAI 配置
-OPENAI_API_KEY="your_openai_api_key"
-OPENAI_API_BASE="https://api.openai.com/v1"
+# vLLM 配置
+VLLM_BASE_URL="http://221.226.33.59:2800"
+VLLM_TIMEOUT=30
+VLLM_DEFAULT_MODEL="default"
+
+# MCP 协议配置
+MCP_ENABLED=true
+MCP_SERVER_NAME="Model Control MCP Server"
+MCP_SERVER_VERSION="1.0.0"
 
 # AI 模型配置
 AI_MODEL_PATH="models/yolov11.pt"

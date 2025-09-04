@@ -2,7 +2,7 @@
 
 这是一个现代化的实时AI识别系统，支持多种流媒体协议（RTSP/RTMP）和YOLOv11模型变体。
 
-## ? 功能特性
+##  功能特性
 
 - **多种流媒体协议支持**: RTSP、RTMP、HTTP/HTTPS、本地文件
 - **YOLOv11模型系列**: 支持从nano到extra-large的所有变体
@@ -13,7 +13,7 @@
 - **实时结果流**: Server-Sent Events实时推送检测结果
 - **可扩展架构**: 工厂模式支持自定义检测器和流提供者
 
-## ? 系统要求
+##  系统要求
 
 ### 基础要求
 - Python 3.11+
@@ -31,7 +31,7 @@
 - FFmpeg (用于RTMP流)
 - 网络摄像头或流媒体服务器
 
-## ? 安装
+##  安装
 
 ### 1. 安装基础依赖
 ```bash
@@ -67,7 +67,7 @@ brew install ffmpeg
 # 下载并安装FFmpeg，确保添加到PATH
 ```
 
-## ? 测试GPU功能
+##   测试GPU功能
 
 运行GPU测试脚本来验证你的设置：
 
@@ -81,7 +81,7 @@ python gpu_test.py
 - 显示推荐的配置设置
 - 验证环境完整性
 
-## ? 快速开始
+##   快速开始
 
 ### 1. 启动服务
 ```bash
@@ -137,7 +137,7 @@ curl http://localhost:2000/api/v1/realtime-ai/results/{service_id}
 curl http://localhost:2000/api/v1/realtime-ai/results/{service_id}/stream
 ```
 
-## ? API 接口
+##  API 接口
 
 ### 核心端点
 
@@ -187,15 +187,15 @@ GET /api/v1/realtime-ai/health
 
 #### RTSP快速启动
 ```http
-POST /api/v1/realtime-ai/start-rtsp?rtsp_url=rtsp://example.com/stream&device=cuda
+POST /api/v1/realtime-ai/start-rtsp rtsp_url=rtsp://example.com/stream&device=cuda
 ```
 
 #### RTMP快速启动
 ```http
-POST /api/v1/realtime-ai/start-rtmp?rtmp_url=rtmp://example.com/stream&device=cuda
+POST /api/v1/realtime-ai/start-rtmp rtmp_url=rtmp://example.com/stream&device=cuda
 ```
 
-## ? 配置参数
+##   配置参数
 
 ### 检测器配置
 
@@ -246,17 +246,17 @@ POST /api/v1/realtime-ai/start-rtmp?rtmp_url=rtmp://example.com/stream&device=cu
 }
 ```
 
-## ? 模型选择建议
+##  模型选择建议
 
 ### 基于GPU内存的推荐
 
 | GPU内存 | 推荐模型 | 批处理大小 | 半精度 |
 |---------|----------|------------|--------|
-| 12GB+   | yolov11x, yolov11l | 4 | ? |
-| 8GB     | yolov11l, yolov11m | 3 | ? |
-| 6GB     | yolov11m, yolov11s | 2 | ? |
-| 4GB     | yolov11s, yolov11n | 1 | ? |
-| <4GB    | yolov11n | 1 | ? |
+| 12GB+   | yolov11x, yolov11l | 4 |   |
+| 8GB     | yolov11l, yolov11m | 3 |   |
+| 6GB     | yolov11m, yolov11s | 2 |   |
+| 4GB     | yolov11s, yolov11n | 1 |   |
+| <4GB    | yolov11n | 1 |   |
 
 ### 基于性能需求的推荐
 
@@ -267,7 +267,7 @@ POST /api/v1/realtime-ai/start-rtmp?rtmp_url=rtmp://example.com/stream&device=cu
 | 边缘设备 | yolov11n | CPU/MPS | 资源受限环境 |
 | 批处理 | yolov11m, yolov11l | CUDA | 平衡性能和精度 |
 
-## ? 性能优化
+##  性能优化
 
 ### GPU优化
 1. **启用半精度**: `half_precision: true` (CUDA)
@@ -286,7 +286,7 @@ POST /api/v1/realtime-ai/start-rtmp?rtmp_url=rtmp://example.com/stream&device=cu
 2. **限制结果缓冲区**: 避免内存泄漏
 3. **及时停止不需要的服务**: 释放资源
 
-## ? 故障排除
+##   故障排除
 
 ### 常见问题
 
@@ -328,7 +328,7 @@ FFmpeg: NOT INSTALLED (required for RTMP streams)
 2. 确保FFmpeg在PATH中
 3. 重启应用程序
 
-## ? 监控和日志
+##   监控和日志
 
 ### 性能监控
 - GPU内存使用情况
@@ -342,7 +342,7 @@ FFmpeg: NOT INSTALLED (required for RTMP streams)
 - **ERROR**: 错误情况
 - **DEBUG**: 详细调试信息
 
-## ? 自定义扩展
+##   自定义扩展
 
 ### 添加自定义检测器
 ```python
@@ -379,16 +379,16 @@ class MyStreamProvider(BaseStreamProvider):
         pass
 ```
 
-## ? 贡献
+##   贡献
 
 欢迎提交问题报告和功能请求！
 
-## ? 许可证
+##   许可证
 
 请参考项目根目录的LICENSE文件。
 
 ---
 
-**? 享受使用实时AI识别模块！**
+**  享受使用实时AI识别模块！**
 
 如有任何问题，请查看文档或提交issue。

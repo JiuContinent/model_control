@@ -62,7 +62,9 @@ class MongoMultiSourceManager:
     async def initialize(self, default_source: str = "default"):
         """Initialize multi-source manager"""
         try:
-            print("Initializing multi-source MongoDB connections...")
+            from app.core.logging import get_module_logger
+            logger = get_module_logger(__name__)
+            logger.info("Initializing multi-source MongoDB connections...")
             
             # Initialize all data sources
             for source_name, config in self.data_sources.items():
@@ -170,21 +172,23 @@ class MongoMultiSourceManager:
     
     async def close_all(self):
         """Close all data source connections"""
-        print("Closing all MongoDB connections...")
+        from app.core.logging import get_module_logger
+        logger = get_module_logger(__name__)
+        logger.info("Closing all MongoDB connections...")
         
         for source_name, client in self.clients.items():
             try:
                 client.close()
-                print(f"Data source {source_name} connection closed")
+                logger.success(f"Data source {source_name} connection closed")
             except Exception as e:
-                print(f"Error closing data source {source_name} connection: {e}")
+                logger.error(f"Error closing data source {source_name} connection: {e}")
         
         self.clients.clear()
         self.databases.clear()
         self.current_source = None
         self.initialized_models.clear()
         
-        print("All MongoDB connections closed")
+        logger.success("All MongoDB connections closed")
     
     def list_sources(self) -> Dict[str, Dict]:
         """List all available data sources"""

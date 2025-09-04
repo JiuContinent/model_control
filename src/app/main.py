@@ -6,15 +6,16 @@ import uvicorn
 import asyncio
 
 from app.config import settings
-# from app.core.logging import setup_logging
+from app.core.logging import setup_app_logging, get_module_logger
 from app.core.exceptions import ModelControlException
 from app.api import ai, mavlink, datasource, upload, mqtt, realtime_ai, vehicle_ai, llm
 from app.mavlink.udp_receiver import start_udp_receiver, stop_udp_receiver
 from app.services.mqtt_service import mqtt_service
-# from loguru import logger
+# 初始化日志系统
+setup_app_logging()
 
-# Setup logging
-# setup_logging()
+# 获取模块日志记录器
+logger = get_module_logger(__name__)
 
 # Create FastAPI instance
 app = FastAPI(
@@ -57,54 +58,53 @@ async def startup_event():
         # Validate environment
         issues = validate_environment()
         if issues:
-            print("??  Environment validation warnings:")
+            logger.warning("Environment validation warnings:")
             for issue in issues:
-                print(f"   - {issue}")
+                logger.warning(f"   - {issue}")
         else:
-            print("? Environment validation passed")
+            logger.success("Environment validation passed")
     except Exception as e:
-        print(f"Failed to log system info: {e}")
+        logger.error(f"Failed to log system info: {e}")
     
-    print("Starting UDP receiver...")
+    logger.info("Starting UDP receiver...")
     try:
         await start_udp_receiver()
-        print("UDP receiver started successfully, listening on port 14550")
+        logger.success("UDP receiver started successfully, listening on port 14550")
     except Exception as e:
-        print(f"Failed to start UDP receiver: {e}")
+        logger.error(f"Failed to start UDP receiver: {e}")
     
-    print("Starting MQTT service...")
+    logger.info("Starting MQTT service...")
     try:
         await mqtt_service.start()
-        print("MQTT service started successfully")
+        logger.success("MQTT service started successfully")
     except Exception as e:
-        print(f"Failed to start MQTT service: {e}")
+        logger.error(f"Failed to start MQTT service: {e}")
     
-    print("? Model Control AI System started successfully!")
+    logger.success("🚀 Model Control AI System started successfully!")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event handler"""
-    print("Stopping UDP receiver...")
+    logger.info("Stopping UDP receiver...")
     try:
         await stop_udp_receiver()
-        print("UDP receiver stopped")
+        logger.success("UDP receiver stopped")
     except Exception as e:
-        print(f"Failed to stop UDP receiver: {e}")
+        logger.error(f"Failed to stop UDP receiver: {e}")
     
-    print("Stopping MQTT service...")
+    logger.info("Stopping MQTT service...")
     try:
         await mqtt_service.stop()
-        print("MQTT service stopped")
+        logger.success("MQTT service stopped")
     except Exception as e:
-        print(f"Failed to stop MQTT service: {e}")
+        logger.error(f"Failed to stop MQTT service: {e}")
 
 
 @app.exception_handler(ModelControlException)
 async def model_control_exception_handler(request, exc):
     """Custom exception handler"""
-    # logger.error(f"Business exception: {exc}")
-    print(f"Business exception: {exc}")
+    logger.error(f"Business exception: {exc}")
     return JSONResponse(
         status_code=500,
         content={"error": str(exc), "type": exc.__class__.__name__}
@@ -114,8 +114,7 @@ async def model_control_exception_handler(request, exc):
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     """General exception handler"""
-    # logger.error(f"Unhandled exception: {exc}")
-    print(f"Unhandled exception: {exc}")
+    logger.error(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
         content={"error": "Internal server error", "detail": str(exc)}

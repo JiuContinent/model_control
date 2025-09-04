@@ -4,16 +4,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 BASE_DIR = Path(__file__).resolve().parent  # app directory
-ENV_FILE = BASE_DIR / ".env"                # src/app/.env
+PROJECT_ROOT = BASE_DIR.parent.parent       # project root directory
+
+# 支持多个.env文件位置
+ENV_FILES = [
+    PROJECT_ROOT / ".env",                  # 项目根目录的.env
+    BASE_DIR / ".env",                      # src/app/.env
+]
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=str(ENV_FILE),
+        env_file=[str(env_file) for env_file in ENV_FILES if env_file.exists()],
         env_file_encoding='utf-8',
         extra='ignore'
     )
 
-    PROJECT_NAME: str = "My FastAPI Project"
+    PROJECT_NAME: str = "Model Control AI System"
     USE_MONGO: bool = False
     
     # MongoDB 认证配置
@@ -36,7 +42,7 @@ class Settings(BaseSettings):
     ANALYTICS_MONGO_DB_NAME: str = "ai_control_analytics"
     
     # vLLM配置
-    VLLM_BASE_URL: str = "http://221.226.33.59:8000"
+    VLLM_BASE_URL: str = "http://221.226.33.59:2800"
     VLLM_TIMEOUT: int = 30
     VLLM_DEFAULT_MODEL: str = "default"
     
@@ -44,6 +50,14 @@ class Settings(BaseSettings):
     MCP_ENABLED: bool = True
     MCP_SERVER_NAME: str = "Model Control MCP Server"
     MCP_SERVER_VERSION: str = "1.0.0"
+    
+    # 日志配置
+    LOG_LEVEL: str = "INFO"
+    LOG_TO_FILE: bool = True
+    LOG_FILE_PATH: str = "logs/app.log"
+    LOG_ROTATION: str = "50 MB"
+    LOG_RETENTION: str = "30 days"
+    DEBUG: bool = False
     
     @property
     def MONGO_URI(self) -> str:
@@ -72,12 +86,23 @@ class Settings(BaseSettings):
     
     # Add environment variable validation
     def model_post_init(self, __context) -> None:
-        if not self.USE_MONGO:
-            print("Warning: No database enabled, some features may not be available")
-        
-        # vLLM服务验证
-        if not self.VLLM_BASE_URL:
-            print("Warning: VLLM_BASE_URL not configured, LLM features will not be available")
+        # 延迟导入避免循环依赖
+        try:
+            from loguru import logger
+            
+            if not self.USE_MONGO:
+                logger.warning("No database enabled, some features may not be available")
+            
+            # vLLM服务验证
+            if not self.VLLM_BASE_URL:
+                logger.warning("VLLM_BASE_URL not configured, LLM features will not be available")
+                
+        except ImportError:
+            # 如果日志系统还未初始化，使用 print
+            if not self.USE_MONGO:
+                print("Warning: No database enabled, some features may not be available")
+            if not self.VLLM_BASE_URL:
+                print("Warning: VLLM_BASE_URL not configured, LLM features will not be available")
 
 
 @lru_cache()

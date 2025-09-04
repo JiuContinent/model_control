@@ -26,21 +26,42 @@ MCP_SERVER_NAME: str = "Model Control MCP Server"
 MCP_SERVER_VERSION: str = "1.0.0"
 ```
 
-### 3. 环境变量配置（可选）
+### 3. 环境变量配置（推荐）
 
-创建 `.env` 文件：
+在项目根目录创建 `.env` 文件：
 
 ```bash
-# vLLM服务配置
-VLLM_BASE_URL=http://221.226.33.59:8000
+# Model Control AI System 配置
+PROJECT_NAME=Model Control AI System
+
+# 数据库配置
+USE_MONGO=true
+MONGO_HOST=221.226.33.58
+MONGO_PORT=27017
+MONGO_USERNAME=root
+MONGO_PASSWORD=your_password_here
+MONGO_AUTH_SOURCE=admin
+
+# 数据库名称
+MONGO_DB_NAME=control_db
+DJI_DB_NAME=dji
+CONTROL_DB_NAME=control_db
+MAVLINK_MONGO_DB_NAME=control_mavlink
+CHAT_MONGO_DB_NAME=model_control_chat
+ANALYTICS_MONGO_DB_NAME=ai_control_analytics
+
+# vLLM服务配置（更新为您的实际端口）
+VLLM_BASE_URL=http://221.226.33.59:2800
 VLLM_TIMEOUT=30
 VLLM_DEFAULT_MODEL=default
 
 # MCP协议配置
 MCP_ENABLED=true
-MCP_SERVER_NAME="Model Control MCP Server"
-MCP_SERVER_VERSION="1.0.0"
+MCP_SERVER_NAME=Model Control MCP Server
+MCP_SERVER_VERSION=1.0.0
 ```
+
+**注意**: 可以将 `env.example` 复制为 `.env` 然后修改您的具体配置。
 
 ## API 接口
 
