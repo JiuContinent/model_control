@@ -7,10 +7,10 @@
 # )
 
 
-from huggingface_hub import snapshot_download
+# from huggingface_hub import snapshot_download
 
-snapshot_download(
-    repo_id="Qwen/Qwen3-8B-AWQ",
-    local_dir=r"D:\Python\model\Qwen3-8B-AWQ",
-    token="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"
-)
+# snapshot_download(
+#     repo_id="Qwen/Qwen3-8B-AWQ",
+#     local_dir=r"D:\Python\model\Qwen3-8B-AWQ",
+#     token="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"
+# )
